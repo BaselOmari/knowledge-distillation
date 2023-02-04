@@ -12,10 +12,8 @@ class PaperParams:
 class LocalParams:
     def __init__(self):
         self.epochs = 30
-        self.lr = 0.1
+        self.lr = 0.01
         self.momentum = 0.5
     
     def optimizer_update_fn(self, optimizer, epoch):
         optimizer.param_groups[0]["lr"] *= 0.95
-        if epoch < 5:
-            optimizer.param_groups[0]["momentum"] += (0.9 - 0.5) / 5
