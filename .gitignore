@@ -1,0 +1,7 @@
+# downloaded data
+data
+
+# venv
+kd-env
+
+__pycache__
