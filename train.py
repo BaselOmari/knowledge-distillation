@@ -18,7 +18,8 @@ class CrossEntropyLossSoft(nn.Module):
         soft_logits = d_logits/self.T
         soft_targets = c_targets/self.T
 
-        soft_loss = F.cross_entropy(soft_logits, soft_targets)*(self.T**2)
+        soft_loss = -(F.softmax(soft_targets, dim=-1)*F.log_softmax(soft_logits, dim=-1)).mean()
+        soft_loss *= (self.T**2)
 
         weighted_loss = soft_loss*self.distillation_weight + true_loss*(1 - self.distillation_weight)
 
@@ -47,7 +48,7 @@ def train(model, dataset, train_params):
             loss.backward()
 
             optimizer.step()
-            model.clip_weights()
+            # model.clip_weights()
 
             epochLoss += loss.item()
         
@@ -59,6 +60,49 @@ def train(model, dataset, train_params):
 
     return model, epochLosses
 
+def distillation(distilled_model, cumbersome_model, T, dataset, train_params, testset):
+    optimizer = optim.SGD(
+        distilled_model.parameters(), lr=train_params.lr, momentum=train_params.momentum
+    )
+    criterion = CrossEntropyLossSoft(
+        train_params.distillation_weight, T
+    )
+
+    cumbersome_model.eval()
+
+    epochLosses = []
+    testScores = []
+
+    for epoch in range(train_params.epochs):
+        
+        epochLoss = 0
+        for input, target in tqdm(dataset):
+
+            optimizer.zero_grad()
+
+            distilled_logits = distilled_model(input)
+            cumbersome_logits = cumbersome_model(input)
+
+            loss = criterion(distilled_logits, cumbersome_logits, target)
+
+            loss.backward()
+
+            optimizer.step()
+
+            epochLoss += loss.item()
+        
+        epochLoss /= len(dataset)
+        print(f"EPOCH {epoch} LOSS: {epochLoss}")
+        epochLosses.append(epochLoss)
+
+        accuracy, incorrect = test(distilled_model, testset)
+        testScores.append(incorrect)
+
+        train_params.optimizer_update_fn(optimizer, epoch)
+
+    return distilled_model, epochLosses, testScores
+
+
 def test(model, test_set):
     model.eval()
     correct, total = 0, 0
@@ -69,4 +113,4 @@ def test(model, test_set):
             correct += (output.argmax(1) == target).sum().item()
             total += target.size(0)
     print("Incorrect Count:", total-correct)
-    return correct / total
+    return correct / total, total-correct
