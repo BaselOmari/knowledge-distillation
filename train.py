@@ -6,17 +6,22 @@ from tqdm import tqdm
 
 
 class CrossEntropyLossSoft(nn.Module):
+    """
+    Objective function of distilled model which combines:
+    - Cross-Entropy Loss with True Labels
+    - Cross-Entropy Loss with Soft Targets
+    """
     def __init__(self, weight, temperature):
         super(CrossEntropyLossSoft, self).__init__()
         self.distillation_weight = weight
         self.T = temperature
 
-    def forward(self, d_logits, c_targets, true_targets):
+    def forward(self, dist_logits, cumb_targets, true_targets):
 
-        true_loss = F.cross_entropy(d_logits, true_targets)
+        true_loss = F.cross_entropy(dist_logits, true_targets)
 
-        soft_logits = d_logits/self.T
-        soft_targets = c_targets/self.T
+        soft_logits = dist_logits/self.T
+        soft_targets = cumb_targets/self.T
 
         soft_loss = -(F.softmax(soft_targets, dim=-1)*F.log_softmax(soft_logits, dim=-1)).mean()
         soft_loss *= (self.T**2)
@@ -116,5 +121,6 @@ def test(model, test_set):
             output = F.softmax(logits, dim=1)
             correct += (output.argmax(1) == target).sum().item()
             total += target.size(0)
-    print("Incorrect Count:", total-correct)
-    return correct / total, total-correct
+    acc = correct/total
+    incorrect = total-correct
+    return acc, incorrect
