@@ -1,7 +1,29 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
+
+
+class CrossEntropyLossSoft(nn.Module):
+    def __init__(self, weight, temperature):
+        super(CrossEntropyLossSoft, self).__init__()
+        self.distillation_weight = weight
+        self.T = temperature
+
+    def forward(self, d_logits, c_targets, true_targets):
+
+        true_loss = F.cross_entropy(d_logits, true_targets)
+
+        soft_logits = d_logits/self.T
+        soft_targets = c_targets/self.T
+
+        soft_loss = F.cross_entropy(soft_logits, soft_targets)*(self.T**2)
+
+        weighted_loss = soft_loss*self.distillation_weight + true_loss*(1 - self.distillation_weight)
+
+        return weighted_loss
+
 
 
 def train(model, dataset, train_params):
