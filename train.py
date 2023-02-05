@@ -27,13 +27,14 @@ class CrossEntropyLossSoft(nn.Module):
 
 
 
-def train(model, dataset, train_params):
+def train(model, dataset, train_params, testset):
     optimizer = optim.SGD(
         model.parameters(), lr=train_params.lr, momentum=train_params.momentum
     )
     criterion = nn.CrossEntropyLoss()
 
     epochLosses = []
+    testScores = []
 
     for epoch in range(train_params.epochs):
         
@@ -56,9 +57,12 @@ def train(model, dataset, train_params):
         print(f"EPOCH {epoch} LOSS: {epochLoss}")
         epochLosses.append(epochLoss)
 
+        accuracy, incorrect = test(model, testset)
+        testScores.append(incorrect)
+
         train_params.optimizer_update_fn(optimizer, epoch)
 
-    return model, epochLosses
+    return model, epochLosses, testScores
 
 def distillation(distilled_model, cumbersome_model, T, dataset, train_params, testset):
     optimizer = optim.SGD(
