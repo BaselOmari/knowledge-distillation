@@ -3,9 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def init_weights(module, stddev):
+def init_weights(module, mean, stddev):
     if isinstance(module, nn.Linear):
-        module.weight.data.normal_(mean=0.0, std=stddev)
+        module.weight.data.normal_(mean=mean, std=stddev)
         if module.bias is not None:
             module.bias.data.zero_()
 
@@ -18,9 +18,14 @@ def scale_vector(vector, magnitude):
 
 def clip_weights(module, max_magnitude):
     if isinstance(module, nn.Linear):
-        for idx, unit in enumerate(module.weight):
-            if unit.norm() > max_magnitude:
-                module.weight.data[idx] = scale_vector(unit, max_magnitude)
+        with torch.no_grad():
+            for idx in range(len(module.weight)):
+                full_weights = torch.cat((module.weight[idx], torch.unsqueeze(module.bias[idx], 0)))
+                if full_weights.norm() > max_magnitude:
+                    normalized = F.normalize(full_weights, dim=0)
+                    scaled = normalized*max_magnitude
+                    module.weight.data[idx] = scaled[:-1]
+                    module.bias.data[idx] = scaled[-1:]
 
 
 class CumbersomeNet(nn.Module):
@@ -47,12 +52,12 @@ class CumbersomeNet(nn.Module):
         )
         self.fc3 = nn.Linear(1200, 10)
 
-        self.apply(lambda m: init_weights(m, 0.01))
+        self.apply(lambda m: init_weights(m, 0, 0.01))
 
     def clip_weights(self, max_magnitude=15):
         self.apply(lambda m: clip_weights(m, max_magnitude))
 
-    def forward(self, x, temperature=1):
+    def forward(self, x):
         x = self.inp(x)
         x = self.fc1(x)
         x = self.fc2(x)
@@ -76,9 +81,9 @@ class SmallNet(nn.Module):
         )
         self.fc3 = nn.Linear(hidden_count, 10)
 
-        self.apply(lambda m: init_weights(m, 0.01))
+        self.apply(lambda m: init_weights(m, 0, 0.01))
 
-    def forward(self, x, temperature=1):
+    def forward(self, x):
         x = self.inp(x)
         x = self.fc1(x)
         x = self.fc2(x)
