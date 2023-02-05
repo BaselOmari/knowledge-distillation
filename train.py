@@ -19,7 +19,7 @@ def train(model, dataset, train_params):
 
             optimizer.zero_grad()
 
-            output, logits = model(input)
+            logits = model(input)
 
             loss = criterion(logits, target)
             loss.backward()
@@ -42,7 +42,8 @@ def test(model, test_set):
     correct, total = 0, 0
     with torch.no_grad():
         for input, target in test_set:
-            output, logit = model(input)
+            logits = model(input)
+            output = F.softmax(logits, dim=1)
             correct += (output.argmax(1) == target).sum().item()
             total += target.size(0)
     print("Incorrect Count:", total-correct)
