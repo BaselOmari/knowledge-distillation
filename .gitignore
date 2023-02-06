@@ -1,7 +1,8 @@
-# downloaded data
 data
+saved_models
 
 # venv
 kd-env
 
+# python
 __pycache__
