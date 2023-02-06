@@ -21,10 +21,9 @@ def train(model, dataset, testset, train_params):
     validation_scores = []
     epoch_losses = []
     for epoch in range(train_params.epochs):
-
         # Set to Training Mode
         model.train()
-        
+
         epoch_loss = 0
         for input, target in tqdm(dataset):
             optimizer.zero_grad()
@@ -39,10 +38,10 @@ def train(model, dataset, testset, train_params):
             model.clip_weights()
 
             epoch_loss += loss.item()
-        
+
         epoch_loss /= len(dataset)
         epoch_losses.append(epoch_loss)
-    
+
         acc, incorrect = test(model, testset)
         validation_scores.append(acc)
 
@@ -55,8 +54,7 @@ def train(model, dataset, testset, train_params):
     return model, epoch_loss, validation_scores
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     # Load Training Hyperparameters
     params = LocalParams()
 
@@ -66,7 +64,6 @@ if __name__=="__main__":
 
     test_set = load_mnist(is_train_set=False)
     test_loader = get_dataloader(test_set)
-
 
     # Create Model
     model = CumbersomeNet()

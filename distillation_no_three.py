@@ -14,9 +14,7 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, three_testse
     optimizer = optim.SGD(
         distilled_model.parameters(), lr=train_params.lr, momentum=train_params.momentum
     )
-    criterion = CrossEntropyLossSoft(
-        train_params.distillation_weight, T
-    )
+    criterion = CrossEntropyLossSoft(train_params.distillation_weight, T)
 
     # Set to Inference Mode (Disable Dropout)
     cumbersome_model.eval()
@@ -25,7 +23,6 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, three_testse
     three_scores = []
     epoch_losses = []
     for epoch in range(train_params.epochs):
-
         # Set to Training Mode
         distilled_model.train()
 
@@ -41,10 +38,10 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, three_testse
             optimizer.step()
 
             epoch_loss += loss.item()
-        
+
         epoch_loss /= len(dataset)
         epoch_losses.append(epoch_loss)
-    
+
         acc_total, incorrect_total = test(distilled_model, testset)
         validation_scores.append(acc_total)
 
@@ -57,17 +54,16 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, three_testse
 
         # update optimizer hyperparameters after every epoch
         train_params.optimizer_update_fn(optimizer, epoch)
-    
+
     return distilled_model, epoch_losses, validation_scores, three_scores
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     # Load Training Hyperparameters
     params = LocalParams()
 
     # Load Train Set
-    classes = [i for i in range(9+1)]
+    classes = [i for i in range(9 + 1)]
     classes.remove(3)
 
     train_set = load_mnist(is_train_set=True, with_jitter=True)
@@ -97,7 +93,7 @@ if __name__=="__main__":
         dataset=train_loader,
         testset=test_loader,
         three_testset=only_three_loader,
-        train_params=params
+        train_params=params,
     )
 
     # Test with increased digit 3 learned bias
@@ -111,10 +107,12 @@ if __name__=="__main__":
     print(f"three acc: {acc_three}")
 
     # Plot Results
-    plt.title(f"Validation Set Accuracy\nDistilled Model Trained without Digit 3 ({hidden_size} units; T={temperature})")
+    plt.title(
+        f"Validation Set Accuracy\nDistilled Model Trained without Digit 3 ({hidden_size} units; T={temperature})"
+    )
     plt.ylabel("Accuracy")
     plt.xlabel("Epochs")
-    plt.plot(validation_scores, label='All Classes')
-    plt.plot(three_scores, label='Digit 3')
+    plt.plot(validation_scores, label="All Classes")
+    plt.plot(three_scores, label="Digit 3")
     plt.legend()
     plt.show()

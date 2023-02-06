@@ -14,9 +14,7 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, train_params
     optimizer = optim.SGD(
         distilled_model.parameters(), lr=train_params.lr, momentum=train_params.momentum
     )
-    criterion = CrossEntropyLossSoft(
-        train_params.distillation_weight, T
-    )
+    criterion = CrossEntropyLossSoft(train_params.distillation_weight, T)
 
     # Set to Inference Mode (Disable Dropout)
     cumbersome_model.eval()
@@ -24,7 +22,6 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, train_params
     validation_scores = []
     epoch_losses = []
     for epoch in range(train_params.epochs):
-
         # Set to Training Mode
         distilled_model.train()
 
@@ -40,10 +37,10 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, train_params
             optimizer.step()
 
             epoch_loss += loss.item()
-        
+
         epoch_loss /= len(dataset)
         epoch_losses.append(epoch_loss)
-    
+
         acc, incorrect = test(distilled_model, testset)
         validation_scores.append(acc)
 
@@ -52,12 +49,11 @@ def distill(distilled_model, cumbersome_model, T, dataset, testset, train_params
 
         # update optimizer hyperparameters after every epoch
         train_params.optimizer_update_fn(optimizer, epoch)
-    
+
     return distilled_model, epoch_losses, validation_scores
 
 
-
-if __name__=="__main__":
+if __name__ == "__main__":
     # Load Training Hyperparameters
     params = LocalParams()
 
@@ -83,11 +79,13 @@ if __name__=="__main__":
         T=temperature,
         dataset=train_loader,
         testset=test_loader,
-        train_params=params
+        train_params=params,
     )
 
     # Plot Results
-    plt.title(f"Validation Set Accuracy\nDistilled Model ({hidden_size} units; T={temperature})")
+    plt.title(
+        f"Validation Set Accuracy\nDistilled Model ({hidden_size} units; T={temperature})"
+    )
     plt.ylabel("Accuracy")
     plt.xlabel("Epochs")
     plt.plot(validation_scores)
