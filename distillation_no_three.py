@@ -100,6 +100,16 @@ if __name__=="__main__":
         train_params=params
     )
 
+    # Test with increased digit 3 learned bias
+    distilled_model.fc3.bias.data[3] += 3.5
+
+    acc_total, incorrect_total = test(distilled_model, test_loader)
+    acc_three, incorrect_three = test(distilled_model, only_three_loader)
+
+    print("Increased Digit 3 Learned Bias by +3.5")
+    print(f"acc: {acc_total}")
+    print(f"three acc: {acc_three}")
+
     # Plot Results
     plt.title(f"Validation Set Accuracy\nDistilled Model Trained without Digit 3 ({hidden_size} units; T={temperature})")
     plt.ylabel("Accuracy")
