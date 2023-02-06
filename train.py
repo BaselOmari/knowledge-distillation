@@ -1,126 +1,87 @@
+# Imports
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 from tqdm import tqdm
 
-
-class CrossEntropyLossSoft(nn.Module):
-    """
-    Objective function of distilled model which combines:
-    - Cross-Entropy Loss with True Labels
-    - Cross-Entropy Loss with Soft Targets
-    """
-    def __init__(self, weight, temperature):
-        super(CrossEntropyLossSoft, self).__init__()
-        self.distillation_weight = weight
-        self.T = temperature
-
-    def forward(self, dist_logits, cumb_targets, true_targets):
-
-        true_loss = F.cross_entropy(dist_logits, true_targets)
-
-        soft_logits = dist_logits/self.T
-        soft_targets = cumb_targets/self.T
-
-        soft_loss = -(F.softmax(soft_targets, dim=-1)*F.log_softmax(soft_logits, dim=-1)).mean()
-        soft_loss *= (self.T**2)
-
-        weighted_loss = soft_loss*self.distillation_weight + true_loss*(1 - self.distillation_weight)
-
-        return weighted_loss
+from dataset import get_dataloader, load_mnist
+from layers import CumbersomeNet
+from training_params import LocalParams
+from utils import CrossEntropyLossSoft, test
 
 
-
-def train(model, dataset, train_params, testset):
+def train(model, dataset, testset, train_params):
     optimizer = optim.SGD(
         model.parameters(), lr=train_params.lr, momentum=train_params.momentum
     )
     criterion = nn.CrossEntropyLoss()
 
-    epochLosses = []
-    testScores = []
-
+    validation_scores = []
+    epoch_losses = []
     for epoch in range(train_params.epochs):
-        
-        epochLoss = 0
-        for input, target in tqdm(dataset):
 
+        # Set to Training Mode
+        model.train()
+        
+        epoch_loss = 0
+        for input, target in tqdm(dataset):
             optimizer.zero_grad()
 
             logits = model(input)
 
             loss = criterion(logits, target)
             loss.backward()
-
-            optimizer.step()
-            # model.clip_weights()
-
-            epochLoss += loss.item()
-        
-        epochLoss /= len(dataset)
-        print(f"EPOCH {epoch} LOSS: {epochLoss}")
-        epochLosses.append(epochLoss)
-
-        accuracy, incorrect = test(model, testset)
-        testScores.append(incorrect)
-
-        train_params.optimizer_update_fn(optimizer, epoch)
-
-    return model, epochLosses, testScores
-
-def distillation(distilled_model, cumbersome_model, T, dataset, train_params, testset):
-    optimizer = optim.SGD(
-        distilled_model.parameters(), lr=train_params.lr, momentum=train_params.momentum
-    )
-    criterion = CrossEntropyLossSoft(
-        train_params.distillation_weight, T
-    )
-
-    cumbersome_model.eval()
-
-    epochLosses = []
-    testScores = []
-
-    for epoch in range(train_params.epochs):
-        
-        epochLoss = 0
-        for input, target in tqdm(dataset):
-
-            optimizer.zero_grad()
-
-            distilled_logits = distilled_model(input)
-            cumbersome_logits = cumbersome_model(input)
-
-            loss = criterion(distilled_logits, cumbersome_logits, target)
-
-            loss.backward()
-
             optimizer.step()
 
-            epochLoss += loss.item()
+            # Comment out if not training cumbersome model
+            model.clip_weights()
+
+            epoch_loss += loss.item()
         
-        epochLoss /= len(dataset)
-        print(f"EPOCH {epoch} LOSS: {epochLoss}")
-        epochLosses.append(epochLoss)
+        epoch_loss /= len(dataset)
+        epoch_losses.append(epoch_loss)
+    
+        acc, incorrect = test(model, testset)
+        validation_scores.append(acc)
 
-        accuracy, incorrect = test(distilled_model, testset)
-        testScores.append(incorrect)
+        print(f"Epoch {epoch} loss: {epoch_loss}")
+        print(f"Epoch {epoch} acc: {acc}")
 
+        # update optimizer hyperparameters after every epoch
         train_params.optimizer_update_fn(optimizer, epoch)
 
-    return distilled_model, epochLosses, testScores
+    return model, epoch_loss, validation_scores
 
 
-def test(model, test_set):
-    model.eval()
-    correct, total = 0, 0
-    with torch.no_grad():
-        for input, target in test_set:
-            logits = model(input)
-            output = F.softmax(logits, dim=1)
-            correct += (output.argmax(1) == target).sum().item()
-            total += target.size(0)
-    acc = correct/total
-    incorrect = total-correct
-    return acc, incorrect
+
+if __name__=="__main__":
+    # Load Training Hyperparameters
+    params = LocalParams()
+
+    # Load Datasets
+    train_set = load_mnist(is_train_set=True, with_jitter=True)
+    train_loader = get_dataloader(train_set, batch_size=params.batch_size)
+
+    test_set = load_mnist(is_train_set=False)
+    test_loader = get_dataloader(test_set)
+
+
+    # Create Model
+    model = CumbersomeNet()
+
+    # Run Distillation
+    model, losses, validation_scores = train(
+        model=model,
+        dataset=train_loader,
+        testset=test_loader,
+        train_params=params
+    )
+
+    # Plot Results
+    plt.title(f"Validation Set Accuracy\nCumbersome Model (1200 Units)")
+    plt.ylabel("Accuracy")
+    plt.xlabel("Epochs")
+    plt.plot(validation_scores)
+    plt.show()
