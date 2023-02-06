@@ -10,12 +10,6 @@ def init_weights(module, mean, stddev):
             module.bias.data.zero_()
 
 
-def scale_vector(vector, magnitude):
-    normalized = F.normalize(vector, dim=0)
-    scaled = normalized * magnitude
-    return scaled
-
-
 def clip_weights(module, max_magnitude):
     if isinstance(module, nn.Linear):
         with torch.no_grad():
