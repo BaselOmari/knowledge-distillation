@@ -24,6 +24,13 @@ Reproducing “Distilling the Knowledge in a Neural Network” by Hinton et al.
         - `PaperParams`: Parameters used in Hinton et al.
         - `LocalParams`: Reduced parameters used for local demonstration
 
+## How to Setup
+1. Install Requirements: `pip install -r requirements.txt`
+2. Run anyone of the following scripts with `python <script-name.py>`
+    - `distillation.py`
+    - `distillation_no_three.py`
+    - `train.py`
+
 ## Models Included
 List of pretrained models included in `/models`:
 - `cumbersome_model_1200.pt`
@@ -43,14 +50,8 @@ List of pretrained models included in `/models`:
     - Model with 300 units in each hidden layer
     - Trained with Knowledge Distillation from cumbersome model and with T = 8
 
-## How to Setup
-1. Install Requirements: `pip install -r requirements.txt`
-2. Run anyone of the following scripts with `python <script-name.py>`
-    - `distillation.py`
-    - `distillation_no_three.py`
-    - `train.py`
-
 ## References
 - G. Hinton, O. Vinyals and J. Dean, "Distilling the Knowledge in a Neural Network," in NIPS Deep Learning and Representation Learning Workshop, Montreal, 2015.
 - G. Hinton, N. Srivastava, A. Krizhevsky, I. Sutskever and R. R. Salakhutdinov, "Improving neural networks by preventing co-adaptation of feature detectors," in arXiv preprint, 2012. 
+- A. Paszke, S. Gross, F. Massa, A. Lerer, J. Bradbury, G. Chanan, T. Killeen, Z. Lin, N. Gimelshein, L. Antiga, A. Desmaison, A. Kopf, E. Yang, Z. DeVito, M. Raison, A. Tejani, S. Chilamkurthy, B. Steiner, L. Fang, J. Bai and S. Chintala, "PyTorch: An Imperative Style, High-Performance Deep Learning Library," in Advances in Neural Information Processing Systems 32, 2019.
 - [WandB: How to Initialize Weights in PyTorch](https://wandb.ai/wandb_fc/tips/reports/How-to-Initialize-Weights-in-PyTorch--VmlldzoxNjcwOTg1)
